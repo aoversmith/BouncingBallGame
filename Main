@@ -1,0 +1,254 @@
+public class BouncingBallGame {
+    public static void main(String[] args) {
+        new GameWindow();
+    }
+}
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ItemEvent;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Timer;
+import java.util.TimerTask;
+
+public class GameWindow extends JFrame {
+    private GamePanel gamePanel;
+    private JLabel timerLabel;
+    private int timeElapsed;
+    private Timer awakeCheckTimer;
+
+    public GameWindow() {
+        setTitle("Bouncing Ball Game");
+        setSize(800, 600);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null); // Center the window
+        setResizable(false);
+
+        gamePanel = new GamePanel();
+        add(gamePanel, BorderLayout.CENTER);
+
+        JPanel controlPanel = new JPanel();
+
+        String[] colors = {"White", "Red", "Blue", "Green", "Pink", "Yellow"};
+        JComboBox<String> colorChooser = new JComboBox<>(colors);
+        setupColorChooser(colorChooser);
+        controlPanel.add(colorChooser);
+
+        String[] speeds = {"Turtle", "Slow", "Normal", "Fast", "Lightning"};
+        JComboBox<String> speedChooser = new JComboBox<>(speeds);
+        setupSpeedChooser(speedChooser);
+        controlPanel.add(speedChooser);
+
+        String[] sizes = {"Small", "Medium", "Large"};
+        JComboBox<String> sizeChooser = new JComboBox<>(sizes);
+        setupSizeChooser(sizeChooser);
+        controlPanel.add(sizeChooser);
+
+        String[] backgroundColors = {"Black", "Red", "Blue", "Green", "Pink", "Yellow"};
+        JComboBox<String> backgroundColorChooser = new JComboBox<>(backgroundColors);
+        setupBackgroundColorChooser(backgroundColorChooser);
+        controlPanel.add(backgroundColorChooser);
+
+        add(controlPanel, BorderLayout.NORTH);
+
+        // Timer panel
+        JPanel timerPanel = new JPanel();
+        timerPanel.setLayout(new BoxLayout(timerPanel, BoxLayout.Y_AXIS));
+        timerPanel.add(new JLabel("How long can you watch it bounce?"));
+        timerLabel = new JLabel("Time: 0s");
+        timerPanel.add(timerLabel);
+        add(timerPanel, BorderLayout.EAST);
+
+        setVisible(true);
+
+        // Start the timer for awake check
+        startAwakeCheckTimer();
+    }
+
+    private void setupColorChooser(JComboBox<String> comboBox) {
+        comboBox.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                gamePanel.setBallColor((String) e.getItem());
+            }
+        });
+    }
+
+    private void setupSpeedChooser(JComboBox<String> comboBox) {
+        comboBox.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                gamePanel.setSpeed((String) e.getItem());
+            }
+        });
+    }
+
+    private void setupSizeChooser(JComboBox<String> comboBox) {
+        comboBox.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                gamePanel.setSize((String) e.getItem());
+            }
+        });
+    }
+
+    private void setupBackgroundColorChooser(JComboBox<String> comboBox) {
+        comboBox.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                gamePanel.setBackgroundColor((String) e.getItem());
+            }
+        });
+    }
+
+    private void startAwakeCheckTimer() {
+        timeElapsed = 0;
+        javax.swing.Timer timer = new javax.swing.Timer(1000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                timeElapsed++;
+                timerLabel.setText("Time: " + timeElapsed + "s");
+
+                if (timeElapsed % 30 == 0) {
+                    SwingUtilities.invokeLater(() -> {
+                        Timer responseTimer = new Timer();
+                        JOptionPane optionPane = new JOptionPane("Are you still awake?", JOptionPane.QUESTION_MESSAGE, JOptionPane.YES_NO_OPTION);
+                        JDialog dialog = optionPane.createDialog("Alert");
+
+                        responseTimer.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                if (dialog.isVisible()) {
+                                    dialog.setVisible(false);
+                                    JOptionPane.showMessageDialog(null, "YOU LOST!", "Game Over", JOptionPane.WARNING_MESSAGE);
+                                    System.exit(0);
+                                }
+                            }
+                        }, 10000); // 10 seconds
+
+                        dialog.setVisible(true);
+                        responseTimer.cancel();
+
+                        int response = (int) optionPane.getValue();
+                        if (response != JOptionPane.YES_OPTION) {
+                            JOptionPane.showMessageDialog(null, "YOU LOST!", "Game Over", JOptionPane.WARNING_MESSAGE);
+                            System.exit(0);
+                        }
+                    });
+                }
+            }
+        });
+        timer.start();
+    }
+}
+
+import javax.swing.JPanel;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.Timer;
+
+public class GamePanel extends JPanel implements ActionListener {
+    private int ballX = 100, ballY = 100, ballDiameter = 15;
+    private int ballXSpeed = 4, ballYSpeed = 4;
+    private Color ballColor = Color.WHITE;
+    private Color backgroundColor = Color.BLACK;
+    private Timer timer;
+
+    public GamePanel() {
+        setBackground(backgroundColor);
+        timer = new Timer(16, this); // Roughly 60 FPS
+        timer.start();
+    }
+
+    public void setSpeed(String speed) {
+        int speedValue = switch (speed) {
+            case "Turtle" -> 1;
+            case "Slow" -> 3;
+            case "Normal" -> 6;
+            case "Fast" -> 11;
+            case "Lightning" -> 35;
+            default -> 1;
+        };
+        ballXSpeed = speedValue;
+        ballYSpeed = speedValue;
+    }
+
+    public void setSize(String size) {
+        ballDiameter = switch (size) {
+            case "Small" -> 15;
+            case "Medium" -> 40;
+            case "Large" -> 90;
+            default -> 15;
+        };
+
+        // Adjust the position of the ball to prevent it from getting stuck
+        adjustBallPosition();
+
+        repaint();
+    }
+
+    private void adjustBallPosition() {
+        // Adjust the ball's X position
+        if (ballX + ballDiameter > getWidth()) {
+            ballX = getWidth() - ballDiameter;
+        }
+        if (ballX < 0) {
+            ballX = 0;
+        }
+
+        // Adjust the ball's Y position
+        if (ballY + ballDiameter > getHeight()) {
+            ballY = getHeight() - ballDiameter;
+        }
+        if (ballY < 0) {
+            ballY = 0;
+        }
+    }
+
+    public void setBallColor(String color) {
+        ballColor = switch (color) {
+            case "White" -> Color.WHITE;
+            case "Red" -> Color.RED;
+            case "Blue" -> Color.BLUE;
+            case "Green" -> Color.GREEN;
+            case "Pink" -> Color.PINK;
+            case "Yellow" -> Color.YELLOW;
+            default -> ballColor;
+        };
+        repaint();
+    }
+
+    public void setBackgroundColor(String color) {
+        backgroundColor = switch (color) {
+            case "Black" -> Color.BLACK;
+            case "Red" -> Color.RED;
+            case "Blue" -> Color.BLUE;
+            case "Green" -> Color.GREEN;
+            case "Pink" -> Color.PINK;
+            case "Yellow" -> Color.YELLOW;
+            default -> backgroundColor;
+        };
+        setBackground(backgroundColor);
+        repaint();
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        g.setColor(ballColor);
+        g.fillOval(ballX, ballY, ballDiameter, ballDiameter);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        ballX += ballXSpeed;
+        ballY += ballYSpeed;
+
+        if (ballX < 0 || ballX + ballDiameter > getWidth()) {
+            ballXSpeed = -ballXSpeed;
+        }
+        if (ballY < 0 || ballY + ballDiameter > getHeight()) {
+            ballYSpeed = -ballYSpeed;
+        }
+
+        repaint();
+    }
+}
