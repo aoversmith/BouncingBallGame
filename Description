@@ -1,0 +1,31 @@
+Main Class: BouncingBallGame
+- The main method creates an instance of GameWindow, which starts the game.
+
+Window Class: GameWindow
+- Constructor:
+  - Sets up the main window with a title, size, and default close operation.
+  - Adds a GamePanel where the ball bounces.
+  - Adds control panels with combo boxes to choose ball color, speed, size, and background color.
+  - Adds a timer panel that displays how long the game has been running.
+  - Starts a timer to check if the player is still awake every 30 seconds.
+
+- Helper Methods:
+  - setupColorChooser: Changes the ball's color based on user selection.
+  - setupSpeedChooser: Changes the ball's speed based on user selection.
+  - setupSizeChooser: Changes the ball's size based on user selection.
+  - setupBackgroundColorChooser: Changes the background color based on user selection.
+  - startAwakeCheckTimer: Every 30 seconds, asks the player if they are still awake. If no response in 10 seconds, shows "YOU LOST!" message and exits.
+
+Panel Class: GamePanel
+- Constructor:
+  - Sets the background color and starts a timer to update the ball's position at roughly 60 frames per second.
+
+- Helper Methods:
+  - setSpeed: Adjusts the ball's speed based on user selection.
+  - setSize: Adjusts the ball's size based on user selection and ensures it doesn't get stuck off-screen.
+  - setBallColor: Changes the ball's color based on user selection.
+  - setBackgroundColor: Changes the background color based on user selection.
+
+- Drawing and Movement:
+  - paintComponent: Draws the ball with the selected color and size.
+  - actionPerformed: Updates the ball's position, bounces it off walls, and repaints the panel.
